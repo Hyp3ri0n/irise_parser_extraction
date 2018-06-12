@@ -109,7 +109,7 @@ func main() {
     }
 	fmt.Println("CLEARING output : DONE");
 
-	Unzip("dataTEST.zip", "output/unziped/");
+	Unzip("data.zip", "output/unziped/");
 	fmt.Println("UNZIPPING files : DONE");
 
 	fmt.Println("TODO : CLEAN ZIP");
