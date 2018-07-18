@@ -472,9 +472,9 @@ func write_SQL_insertAfter_archA(data data, target, filename string) error {
 		line_data.WriteString("', '");
 		line_data.WriteString(data.telem[i].state);
 		line_data.WriteString("', '");
-		line_data.WriteString(data.homeId);
-		line_data.WriteString("', '");
 		line_data.WriteString(data.deviceId);
+		line_data.WriteString("', '");
+		line_data.WriteString(data.homeId);
 		line_data.WriteString("');\n");
 	}
 	line_data.WriteString("----------------------------------------------\n");
