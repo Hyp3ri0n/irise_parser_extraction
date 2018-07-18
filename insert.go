@@ -20,7 +20,7 @@ type InsertData struct {
 var insertData = [182]InsertData{};
 
 func Insert(src string) error {
-	connStr := "postgres://root:root@localhost/root?sslmode=disable"
+	connStr := "postgres://postgres:root@localhost/irise_opti?sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return err;
@@ -67,9 +67,9 @@ func Insert(src string) error {
 	for j := 0; j < 10; j++ {
 		for i := 0; i < 182; i++ {
 			timeStart := time.Now();
-			err := db.QueryRow(insertData[i].data[j]);
+			_, err := db.Exec(insertData[i].data[j]);
 			if err != nil {
-				fmt.Print("x");
+				fmt.Println("x");
 			} else {
 				fmt.Print(".");
 			}
@@ -83,6 +83,7 @@ func Insert(src string) error {
 		t := rand.Intn(100);
 		time.Sleep(time.Duration(t) * time.Millisecond);
 	}	
+
 	fmt.Println("\n");
 	fmt.Println(durations);
 	return nil;
