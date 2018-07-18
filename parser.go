@@ -477,8 +477,7 @@ func write_SQL_insertAfter_archA(data data, target, filename string) error {
 		line_data.WriteString(data.deviceId);
 		line_data.WriteString("');\n");
 	}
-	line_data.WriteString("\nCOMMIT;\n");
-	line_data.WriteString("\nSELECT pg_sleep(2);\n");
+	line_data.WriteString("----------------------------------------------\n");
 
 	timeEnd := time.Now();
 
@@ -712,9 +711,7 @@ func write_SQL_insertAfter_archB(data data, target, filename string) error {
 		line_data.WriteString(data.deviceId);
 		line_data.WriteString("');\n");
 	}
-	line_data.WriteString("\nCOMMIT;\n");
-	line_data.WriteString("\nSELECT pg_sleep(2);\n");
-
+	line_data.WriteString("----------------------------------------------\n");
 	timeEnd := time.Now();
 
 	fmt.Print("CREATE BUFFER end : ");
