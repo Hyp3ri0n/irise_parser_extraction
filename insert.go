@@ -17,7 +17,12 @@ type InsertData struct {
 	data []string
 }
 
+type MyDB struct {
+    *sql.DB
+}
+
 var insertData = [182]InsertData{};
+var durations = []time.Duration{};
 
 func Insert(src string) error {
 	connStr := "postgres://postgres:root@localhost/irise_opti?sslmode=disable"
@@ -62,19 +67,9 @@ func Insert(src string) error {
 	}
 	fmt.Println("PARSE FILE DONE !");
 
-	var durations = []time.Duration{};
-
 	for j := 0; j < 10; j++ {
 		for i := 0; i < 182; i++ {
-			timeStart := time.Now();
-			_, err := db.Exec(insertData[i].data[j]);
-			if err != nil {
-				fmt.Println("x");
-			} else {
-				fmt.Print(".");
-			}
-			timeEnd := time.Now();
-			durations = append(durations, timeEnd.Sub(timeStart));
+			go InsertConcurrence(db, insertData[i].data[j]);
 			// WAIT
 			t := rand.Intn(100);
 			time.Sleep(time.Duration(t) * time.Millisecond);
@@ -87,6 +82,18 @@ func Insert(src string) error {
 	fmt.Println("\n");
 	fmt.Println(durations);
 	return nil;
+}
+
+func InsertConcurrence(db *sql.DB, request string) {
+	timeStart := time.Now();
+	_, err := db.Exec(request);
+	if err != nil {
+		fmt.Print("x");
+	} else {
+		fmt.Print(".");
+	}
+	timeEnd := time.Now();
+	durations = append(durations, timeEnd.Sub(timeStart));
 }
 
 func main() {
