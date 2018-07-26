@@ -459,7 +459,7 @@ func write_SQL_insertAfter_archA(data data, target, filename string) error {
 
 	var line_data bytes.Buffer;
 
-	line_data.WriteString("-- INSERT DEVICE : " + data.deviceId + " --\n");
+	line_data.WriteString("--" + data.deviceId + "\n");
 	for i := range data.telem {
 		line_data.WriteString("INSERT INTO ");
 		line_data.WriteString(TELEMETRY_TABLE_NAME);
@@ -475,7 +475,9 @@ func write_SQL_insertAfter_archA(data data, target, filename string) error {
 		line_data.WriteString(data.deviceId);
 		line_data.WriteString("', '");
 		line_data.WriteString(data.homeId);
-		line_data.WriteString("');\n");
+		line_data.WriteString("');--");
+		line_data.WriteString(data.telem[i].value);
+		line_data.WriteString("\n");
 	}
 	line_data.WriteString("----------------------------------------------\n");
 
@@ -695,7 +697,7 @@ func write_SQL_insertAfter_archB(data data, target, filename string) error {
 
 	var line_data bytes.Buffer;
 
-	line_data.WriteString("-- INSERT DEVICE : " + data.deviceId + " --\n");
+	line_data.WriteString("--" + data.deviceId + "\n");
 	for i := range data.telem {
 		line_data.WriteString("INSERT INTO ");
 		line_data.WriteString(TELEMETRY_TABLE_NAME);
@@ -709,7 +711,9 @@ func write_SQL_insertAfter_archB(data data, target, filename string) error {
 		line_data.WriteString(data.telem[i].state);
 		line_data.WriteString("', '");
 		line_data.WriteString(data.deviceId);
-		line_data.WriteString("');\n");
+		line_data.WriteString("');--");
+		line_data.WriteString(data.telem[i].value);
+		line_data.WriteString("\n");
 	}
 	line_data.WriteString("----------------------------------------------\n");
 	timeEnd := time.Now();
