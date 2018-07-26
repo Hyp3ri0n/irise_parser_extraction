@@ -28,7 +28,7 @@ var insertData = [182]InsertData{};
 var durations = []time.Duration{};
 
 func Insert(src string) error {
-	connStr := "postgres://postgres:root@localhost/irise_opti?sslmode=disable"
+	connStr := "postgres://Golang:azerty@localhost/irise_opti?sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return err;
@@ -60,7 +60,7 @@ func Insert(src string) error {
 			start = !start;
 			if start == true {
 				index = index+1;
-				id := line[2:len(line)-1]
+				id := line[2:len(line)]
 				insertData[index].id = id;
 			}
 		} else {
@@ -97,15 +97,15 @@ func Insert(src string) error {
 
 func InsertConcurrence(db *sql.DB, id string, _value int, request string) {
 
-	rows, err := db.Query("SELECT value FROM Telemetry WHERE appliance_id=? ORDER BY datetime DESC LIMIT 1", id)
+	rows, err := db.Query("SELECT value FROM Telemetry WHERE appliance_id = '" + id + "' ORDER BY datetime DESC LIMIT 1")
 	if err != nil {
-		fmt.Print("x");
+		fmt.Print("S");
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			var value int
 			if err := rows.Scan(&value); err != nil {
-				fmt.Print("x");
+				fmt.Print("V");
 			} else {
 				if (_value == value) {
 					fmt.Print("-");
