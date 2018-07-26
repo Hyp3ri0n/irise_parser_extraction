@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	//"path/filepath"
 	"strings"
 	"bufio"
 	"regexp"
@@ -12,6 +11,9 @@ import (
 	"bytes"
 )
 
+/**
+ * Structure représentant une mesure d'un capteur
+ */
 type telemetry struct {
     date string
 	heure string
@@ -19,6 +21,9 @@ type telemetry struct {
 	value string
 }
 
+/**
+ * Structure représentant une donnée "telemetry" à insérer en base
+ */
 type data struct {
 	homeId string
 	deviceId string
@@ -27,17 +32,26 @@ type data struct {
     telem []telemetry
 }
 
+/**
+ * Structure représentant une donnée "ApplianceType" à insérer en base
+ */
 type typeDevice struct {
 	typeId string
 	name string
-	lexique []string
+	lexique []string	// Cette variable permet de savoir les mots clés définissant le type de capteur
 }
 
+/**
+ * Nom des tables SQL
+ */
 var DEVICE_TABLE_NAME = "Appliance";
 var HOME_TABLE_NAME = "Household";
 var TELEMETRY_TABLE_NAME = "Telemetry";
 var TYPE_TABLE_NAME = "ApplianceType";
 
+/**
+ * Liste des types de capteurs à identifier
+ */
 var typeData = []typeDevice { 
     typeDevice { typeId: "0", name: "Fridge - Freezer", lexique: []string{"fridge", "freezer"} },
     typeDevice { typeId: "1", name: "Lamp", lexique: []string{"lamp", "light", "Halogen"} },
@@ -51,13 +65,90 @@ var typeData = []typeDevice {
     typeDevice { typeId: "9", name: "Autres", lexique: []string{} },
 };
 
+/**
+ * Buffer des données à inserer dans les fichiers
+ */
 var home_data_csv bytes.Buffer;
 var home_data_sql bytes.Buffer;
-
 var type_data_csv bytes.Buffer;
 var type_data_sql bytes.Buffer;
 
+
+/**
+ * Le point d'entré du programme :
+ * Ce dernier permet de parser les fichiers "*.txt" issue de l'extraction de l'archive IRISE
+ * /!\ Ce script génère les données pour deux strategies et pour deux architectures en "*.csv" et "*.sql" /!\
+ * Prerequis :
+ *	- le script "extractor.go" doit être lancé et terminé
+ *	- Le dossier "output/unziped" doit être au même niveau que les scripts go
+ * Architecture produite :
+ *  output/
+ *  |___ parsed/
+ *    	|___ CSV/
+ *    	|	|___ arch_a/
+ *    	|	|	|___ start_basic/
+ *    	|	|	|	|___ *.csv
+ *    	|	|	|___ strat_onUpdate/
+ *    	|	|	 	|___ *.csv
+ *    	|	|___ arch_b/
+ *    	|		|___ start_basic/
+ *    	|		|	|___ *.csv
+ *    	|		|___ strat_onUpdate/
+ *    	|			|___ *.csv
+ *    	|___ insert_after/
+ *    	|	|___ arch_a/
+ *    	|	|	|___ start_basic/
+ *    	|	|	|	|___ insert_after.sql
+ *    	|	|	|___ strat_onUpdate/
+ *    	|	|		|___ insert_after.sql
+ *    	|	|___ arch_b/
+ *    	|		|___ start_basic/
+ *    	|		|	|___ insert_after.sql
+ *    	|		|___ strat_onUpdate/
+ *    	|			|___ insert_after.sql
+ *    	|___ SQL/
+ *    		|___ arch_a/
+ *    		|	|___ start_basic/
+ *    		|	|	|___ *.sql
+ *    		|	|___ strat_onUpdate/
+ *    		|		|___ *.sql
+ *    		|___ arch_b/
+ *    			|___ start_basic/
+ *    			|	|___ *.sql
+ *    			|___ strat_onUpdate/
+ *    				|___ *.sql
+ */
+func main() {
+	fmt.Println("STARTING Parser !");
+	// Supprime le dossiers "output/parsed" si il est déjà présent
+	if err := os.RemoveAll("output/parsed/"); err != nil {
+		fmt.Println("ERROR CLEAR DIST : ");
+		fmt.Println(err);
+    }
+	fmt.Println("CLEARING output : DONE");
+	
+	timeStart := time.Now();
+	
+	// Execution de la fonction principale
+	Parser("output/unziped/", "output/parsed/");
+
+	timeEnd := time.Now();
+	fmt.Print("PARSING end : ");
+	fmt.Println(timeEnd.Sub(timeStart));
+	fmt.Println("PARSING files : DONE");
+
+	fmt.Println("TODO : CLEAN ZIPED FILES");
+
+	fmt.Println("ENDING Parser !");
+}
+
+/**
+ * Cette méthode permet de parser les fichiers "*.txt" présent dans les sources 
+ * @src le chemin sources des fichiers
+ * @target le chemin cible de génération
+ */
 func Parser(src, target string) error {
+	// On récupère les fichiers "*.txt"
 	files, err := ioutil.ReadDir(src)
     if err != nil {
 		fmt.Println("ERROR READ DIR : ");
@@ -65,28 +156,32 @@ func Parser(src, target string) error {
 		return err
     }
 
+	// On créé le dossier cible
     if err := os.MkdirAll(target, 0755); err != nil {
 		fmt.Println("ERROR CREATE DIST : ");
 		fmt.Println(err);
         return err
     }
 
+	// Pour chaque fichier
     for _, file := range files {
 
-		//path := filepath.Join(target, file.Name());
-		//fmt.Printf("TEST : "+path+"\n");
-
+		// Si c'est un dossier
         if file.IsDir() {
+			// Pn relance le parsage à l'intérieure
 			Parser(src + file.Name() +"/", target);
             continue
 		}
-
+		
+		// Si c'est un zip on ne fait rien
 		if strings.HasSuffix(file.Name(), ".zip") {
 			continue
 		}
 
+		// Si c'est un fichier "*.txt"
 		if strings.HasSuffix(file.Name(), ".txt") {
 			fmt.Printf("file : "+src+file.Name()+"\n");
+			// On parse le fichier
 			ParseFile(src, file.Name(), target);
 			continue
 		}
@@ -94,12 +189,17 @@ func Parser(src, target string) error {
         
 	}
 	
-
-
     return nil
 }
 
+/**
+ * Cette méthode permet de parser un fichier "*.txt" 
+ * @src le chemin source du fichier
+ * @filename le nom du fichier
+ * @target le chemin cible de génération
+ */
 func ParseFile(src, filename, target string) error {
+	// On ouvre le fichier
 	file, err := os.Open(src+filename);
 	if err != nil {
 		fmt.Println("ERROR READ FILE : ");
@@ -111,8 +211,10 @@ func ParseFile(src, filename, target string) error {
 
 	timeStart := time.Now();
 
+	// On ouvre un scanner pour lire le fichier
 	scanner := bufio.NewScanner(file);
 
+	// On définit les regex pour parser les données
 	pattern_device := regexp.MustCompile("^APPLIANCE\\s:\\s([a-zA-Z0-9\\s\\(\\),]*)");
 	pattern_home := regexp.MustCompile("^HOUSEHOLD\\s:\\s([0-9]*)");
 	pattern_line := regexp.MustCompile("^(([0-9]{2}\\/?){3})\\t(([0-9]{2}:?){2})\\t([0-9]*)\\t([0-9]*)");
@@ -120,13 +222,16 @@ func ParseFile(src, filename, target string) error {
 	data_to_insert_before := data{deviceId: strings.Replace(strings.Split(filename,"-")[2], ".txt", "", 1)};
 	data_to_insert_after := data{deviceId: strings.Replace(strings.Split(filename,"-")[2], ".txt", "", 1)};
 
+	// On lit le fichier
 	for scanner.Scan() {
 		line := scanner.Text();
 
+		// On applique les regex
 		results_device := pattern_device.FindStringSubmatch(line);
 		results_home := pattern_home.FindStringSubmatch(line);
 		results_line := pattern_line.FindStringSubmatch(line);
 
+		// On insert les données recoltés pour le capteur
 		if len(results_device) > 0 {
 			data_to_insert_before.deviceName = results_device[1];
 			data_to_insert_after.deviceName = results_device[1];
@@ -149,10 +254,12 @@ func ParseFile(src, filename, target string) error {
 
 			
 		}
+		// On insert les données recoltés pour la maison
 		if len(results_home) > 0 {
 			data_to_insert_before.homeId = results_home[1];
 			data_to_insert_after.homeId = results_home[1];
 		}
+		// On insert les données recoltés pour les mesures
 		if len(results_line) > 0 {
 			
 			telem := telemetry{
@@ -169,16 +276,14 @@ func ParseFile(src, filename, target string) error {
 	fmt.Print("PARSING FILE end : ");
 	fmt.Println(timeEnd.Sub(timeStart));
 
+	// On récupère les dernières mesures pour générer le fichier d'insert "au file de l'eau"
 	for i := 0; i < 10; i++ {
 		data_to_insert_after.telem = append(data_to_insert_after.telem, data_to_insert_before.telem[len(data_to_insert_before.telem)-1]);
 		data_to_insert_before.telem = data_to_insert_before.telem[:len(data_to_insert_before.telem)-1];
 	}
 
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	/*			Architecture A        */
-	/*						          */
-	/*			Telemetry table :     */
-	/*							      */
+	/*	   Ecriture Architecture A    */
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	if err := write_CSV_stratBasic_archA(data_to_insert_before, target+"CSV/arch_a/strat_basic/", filename); err != nil {
 		fmt.Println("ERROR CREATE DIST : ");
@@ -211,10 +316,7 @@ func ParseFile(src, filename, target string) error {
 	}
 	
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-	/*			Architecture B        */
-	/*						          */
-	/*			Telemetry table :     */
-	/*							      */
+	/*	   Ecriture Architecture B    */
 	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	if err := write_CSV_stratBasic_archB(data_to_insert_before, target+"CSV/arch_b/strat_basic/", filename); err != nil {
 		fmt.Println("ERROR CREATE DIST : ");
@@ -245,7 +347,6 @@ func ParseFile(src, filename, target string) error {
 		fmt.Println(err);
         return err;
     }
-
 
 	return nil;
 }
@@ -860,25 +961,4 @@ func appendFile(target, content string) error {
 	f.Close();
 
 	return nil;
-}
-
-
-func main() {
-	fmt.Println("STARTING Parser !");
-	if err := os.RemoveAll("output/parsed/"); err != nil {
-		fmt.Println("ERROR CLEAR DIST : ");
-		fmt.Println(err);
-    }
-	fmt.Println("CLEARING output : DONE");
-	
-	timeStart := time.Now();
-	Parser("output/unziped/", "output/parsed/");
-	timeEnd := time.Now();
-	fmt.Print("PARSING end : ");
-	fmt.Println(timeEnd.Sub(timeStart));
-	fmt.Println("PARSING files : DONE");
-
-	fmt.Println("TODO : CLEAN ZIPED FILES");
-
-	fmt.Println("ENDING Parser !");
 }

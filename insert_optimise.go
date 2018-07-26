@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	//"io/ioutil"
 	"os"
 	"strings"
 	"math/rand"
@@ -26,6 +25,25 @@ type MyDB struct {
 
 var insertData = [182]InsertData{};
 var durations = []time.Duration{};
+
+
+func main() {
+	fmt.Println("STARTING Insert !");
+
+	
+	timeStart := time.Now();
+	err := Insert("output/parsed/insert_after/arch_a/insert_after.sql");
+	if err != nil {
+		fmt.Println(err);
+	}
+	timeEnd := time.Now();
+	fmt.Print("PARSING end : ");
+	fmt.Println(timeEnd.Sub(timeStart));
+	fmt.Println("PARSING files : DONE");
+
+	fmt.Println("ENDING Insert !");
+}
+
 
 func Insert(src string) error {
 	// Chaine de connexion à la base de données PostgreSQL
@@ -144,21 +162,4 @@ func InsertConcurrence(db *sql.DB, id string, _value int, request string) {
 			}
 		}
 	}
-}
-
-func main() {
-	fmt.Println("STARTING Insert !");
-
-	
-	timeStart := time.Now();
-	err := Insert("output/parsed/insert_after/arch_a/insert_after.sql");
-	if err != nil {
-		fmt.Println(err);
-	}
-	timeEnd := time.Now();
-	fmt.Print("PARSING end : ");
-	fmt.Println(timeEnd.Sub(timeStart));
-	fmt.Println("PARSING files : DONE");
-
-	fmt.Println("ENDING Insert !");
 }
