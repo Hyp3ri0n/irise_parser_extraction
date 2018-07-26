@@ -25,13 +25,17 @@ var insertData = [182]InsertData{};
 var durations = []time.Duration{};
 
 func Insert(src string) error {
+	// Chaine de connexion à la base de données PostgreSQL
 	connStr := "postgres://postgres:root@localhost/irise_opti?sslmode=disable"
+
+	// Connexion
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return err;
 	}
 	fmt.Println("CONNECTED TO DB !");
 	
+	// Lecture du fichier d'insert
 	file, err := os.Open(src);
 	if err != nil {
 		fmt.Println("ERROR READ FILE : ");
@@ -41,6 +45,7 @@ func Insert(src string) error {
 
 	fmt.Println("OPEN FILE DONE !");
 
+	// Permet de deferer la fermeture du fichier dès qu'il n'est plus utilisé
 	defer file.Close();
 
 	pattern_split := regexp.MustCompile("^--*");
@@ -48,17 +53,24 @@ func Insert(src string) error {
 	start := false;
 	scanner := bufio.NewScanner(file);
 
+	// Lecture des lignes du fichier
 	for scanner.Scan() {
 		line := scanner.Text();
 
+		// Recupère les lignes de commentaire (^--*)
 		split := pattern_split.FindStringSubmatch(line);
 
+		// Si il s'agit d'une ligne de commentaire
 		if len(split) > 0 {
+			// Voir la strcuture des fichier générer
+			// il y a deux lignes de commentaire, une sans ID, une avec ID
 			start = !start;
+			// si c'est une ligne de commentaire avec ID => changement d'appareil
 			if start == true {
 				index = index+1;
 			}
 		} else {
+			// Si ce n'est pas une ligne vide, on insert la commande dans un tableau
 			if len(line) > 0 {
 				insertData[index].data = append(insertData[index].data, line);
 			}
@@ -67,8 +79,12 @@ func Insert(src string) error {
 	}
 	fmt.Println("PARSE FILE DONE !");
 
+	// pour les 10 lignes
 	for j := 0; j < 10; j++ {
+		// des 182 appareils
 		for i := 0; i < 182; i++ {
+			// Code d'insertion des données
+			// le keyword 'go' permet de paralleliser l'exécution
 			go InsertConcurrence(db, insertData[i].data[j]);
 			// WAIT
 			t := rand.Intn(100);
@@ -86,6 +102,7 @@ func Insert(src string) error {
 
 func InsertConcurrence(db *sql.DB, request string) {
 	timeStart := time.Now();
+	// Exécution de la requête
 	_, err := db.Exec(request);
 	if err != nil {
 		fmt.Print("x");
