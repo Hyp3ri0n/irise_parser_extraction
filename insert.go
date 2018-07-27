@@ -11,18 +11,36 @@ import (
 	_ "github.com/lib/pq"
 )
 
+/**
+ * Structure contenant les informations relatives aux insertions
+ */
 type InsertData struct {
 	data []string
 }
 
+/**
+ * Structure permettant d'utiliser le type "sql.DB" en paramètre de fonction
+ */
 type MyDB struct {
     *sql.DB
 }
 
+/**
+ * Variables globales
+ */
 var insertData = [182]InsertData{};
 var durations = []time.Duration{};
 
-
+/**
+ * Le point d'entré du programme :
+ * Ce dernier permet d'insérer au file de l'eau des mesures de capteurs sur une base non optimisée OU sur 
+ * une base optimiser contenant le "trigger"
+ * Prerequis :
+ *	- le script "parser.go" doit être lancé et terminé
+ *	- Le dossier "output/parsed" doit être au même niveau que les scripts go
+ * Architecture produite :
+ *  - Des insertions dan la base de données
+ */
 func main() {
 	fmt.Println("STARTING Insert !");
 
